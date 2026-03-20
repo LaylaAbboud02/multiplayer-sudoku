@@ -3,8 +3,13 @@ package main
 import (
 	"html/template"
 	"log"
+	"multiplayer-sudoku/internal/game"
 	"net/http"
 )
+
+type PageData struct {
+	Board game.Board
+}
 
 func main () {
 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
@@ -13,7 +18,11 @@ func main () {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		err := tmpl.Execute(w, nil)
+		data := PageData{
+			Board: game.NewSampleBoard(),
+		}
+
+		err := tmpl.Execute(w, data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Println("template execute error:", err)
