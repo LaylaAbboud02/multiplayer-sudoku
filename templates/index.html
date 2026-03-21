@@ -15,10 +15,22 @@
         {{range $rowIndex, $row := .Board}}
             {{range $colIndex, $cell := $row}}
             <div class="cell {{if $cell.Fixed}}fixed{{else}}editable{{end}}">
-                {{if ne $cell.Value 0}}{{$cell.Value}}{{end}}
+                {{if $cell.Fixed}}
+                {{$cell.Value}}
+                {{else}}
+                <input
+                    class="cell-input"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="1"
+                    data-row="{{$rowIndex}}"
+                    data-col="{{$colIndex}}"
+                />
+                {{end}}
             </div>
             {{end}}
         {{end}}
+        </div>
         </div>
     </main>
 
