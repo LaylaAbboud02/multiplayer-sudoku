@@ -1,0 +1,27 @@
+{
+  "name": "multiplayer-sudoku",
+  "version": "1.0.0",
+  "description": "Browser-based multiplayer Sudoku built with Go.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "npx @tailwindcss/cli -i ./static/css/tailwind.css -o ./static/css/styles.css",
+    "watch:css": "npx @tailwindcss/cli -i ./static/css/tailwind.css -o ./static/css/styles.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LaylaAbboud02/multiplayer-sudoku.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/LaylaAbboud02/multiplayer-sudoku/issues"
+  },
+  "homepage": "https://github.com/LaylaAbboud02/multiplayer-sudoku#readme",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "tailwindcss": "^4.2.2"
+  }
+}

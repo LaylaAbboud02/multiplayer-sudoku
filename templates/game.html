@@ -6,23 +6,27 @@
   <title>Room {{.RoomID}} - Multiplayer Sudoku</title>
   <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
-<body>
-  <main class="container">
-    <h1>Multiplayer Sudoku</h1>
-    <p>Room code: <strong>{{.RoomID}}</strong></p>
-    <p>Fill the board. You lose after 4 wrong attempts.</p>
+<body class="min-h-screen bg-zinc-100 text-zinc-900 flex items-center justify-center">
+  <main class="w-full max-w-4xl px-6 py-8 text-center">
+    <h1 class="mt-0 text-4xl font-bold tracking-tight">Multiplayer Sudoku</h1>
+    <p class="mt-3 text-base text-zinc-700">
+      Room code: <strong>{{.RoomID}}</strong>
+    </p>
+    <p class="mt-1 text-base text-zinc-700">
+      Fill the board. You lose after 4 wrong attempts.
+    </p>
 
-    <div class="game-info">
+    <div class="mb-5 mt-5 space-y-1">
       <p id="mistakes-display">Mistakes: 0 / 4</p>
       <p id="attempts-left-display">Attempts left: 4</p>
       <p id="status-message">Game in progress</p>
     </div>
 
-    <div class="board">
+    <div class="board mx-auto grid w-fit grid-cols-9 grid-rows-9 border-[3px] border-zinc-900 bg-white">
       {{range $rowIndex, $row := .Board}}
         {{range $colIndex, $cell := $row}}
           <div
-            class="cell {{if $cell.Fixed}}fixed{{else}}editable{{end}}"
+            class="cell flex h-[60px] w-[60px] items-center justify-center border border-zinc-400 box-border text-[1.4rem] {{if $cell.Fixed}}bg-zinc-200 font-bold{{else}}bg-white{{end}}"
             data-row="{{$rowIndex}}"
             data-col="{{$colIndex}}"
           >
@@ -30,7 +34,7 @@
               {{$cell.Value}}
             {{else}}
               <input
-                class="cell-input"
+                class="cell-input h-full w-full bg-transparent p-0 text-center text-[1.4rem] text-zinc-900 outline-none focus:bg-blue-100 disabled:cursor-not-allowed disabled:bg-zinc-100"
                 type="text"
                 inputmode="numeric"
                 maxlength="1"
@@ -44,7 +48,9 @@
       {{end}}
     </div>
 
-    <p class="back-link"><a href="/">Back to home</a></p>
+    <p class="mt-5">
+      <a href="/" class="text-zinc-700 underline hover:text-zinc-900">Back to home</a>
+    </p>
   </main>
 
   <script src="/static/js/app.js"></script>

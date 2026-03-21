@@ -6,28 +6,38 @@
   <title>Multiplayer Sudoku</title>
   <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
-<body>
-  <main class="container">
-    <h1>Multiplayer Sudoku</h1>
-    <p>Create a room or join one with a code.</p>
+<body class="min-h-screen bg-zinc-100 text-zinc-900 flex items-center justify-center">
+  <main class="w-full max-w-2xl px-6 py-8 text-center">
+    <h1 class="mt-0 text-4xl font-bold tracking-tight">Multiplayer Sudoku</h1>
+    <p class="mt-3 text-base text-zinc-700">Create a room or join one with a code.</p>
 
     {{if .Error}}
-      <p class="error-message">{{.Error}}</p>
+      <p class="mt-4 font-semibold text-red-700">{{.Error}}</p>
     {{end}}
 
-    <div class="menu-card">
+    <div class="mt-8 flex flex-col items-center gap-4">
       <form action="/create-room" method="POST">
-        <button type="submit" class="menu-button">Create Room</button>
+        <button
+          type="submit"
+          class="rounded-lg bg-zinc-900 px-4 py-2.5 text-base text-white transition hover:opacity-90"
+        >
+          Create Room
+        </button>
       </form>
 
-      <form action="/join-room" method="POST" class="join-form">
+      <form action="/join-room" method="POST" class="flex flex-col items-center gap-3">
         <input
           type="text"
           name="room_id"
           placeholder="Enter room code"
-          class="room-input"
+          class="rounded-lg border border-zinc-400 px-4 py-2.5 text-center text-base outline-none focus:border-blue-500"
         />
-        <button type="submit" class="menu-button">Join Room</button>
+        <button
+          type="submit"
+          class="rounded-lg bg-zinc-900 px-4 py-2.5 text-base text-white transition hover:opacity-90"
+        >
+          Join Room
+        </button>
       </form>
     </div>
   </main>
