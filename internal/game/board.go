@@ -8,26 +8,105 @@ type Cell struct {
 type Board [9][9]Cell
 
 func NewSampleBoard() Board {
-	values := [9][9]int{
-		{1, 0, 0, 0, 3, 4, 0, 0, 8},
-		{0, 7, 0, 6, 8, 0, 0, 3, 0},
-		{0, 0, 8, 2, 1, 0, 7, 0, 4},
-		{0, 5, 4, 0, 9, 0, 6, 8, 0},
-		{9, 1, 0, 5, 0, 8, 0, 2, 0},
-		{0, 8, 0, 3, 0, 0, 0, 0, 5},
-		{3, 0, 5, 9, 0, 6, 8, 7, 1},
-		{0, 0, 6, 0, 0, 0, 0, 4, 0},
-		{0, 0, 1, 0, 7, 0, 2, 0, 0},
+	return Board{
+		{
+			{Value: 1, Fixed: true},
+			{Value: 6, Fixed: false},
+			{Value: 2, Fixed: false},
+			{Value: 7, Fixed: false},
+			{Value: 3, Fixed: true},
+			{Value: 4, Fixed: true},
+			{Value: 5, Fixed: false},
+			{Value: 9, Fixed: false},
+			{Value: 8, Fixed: true},
+		},
+		{
+			{Value: 4, Fixed: false},
+			{Value: 7, Fixed: true},
+			{Value: 9, Fixed: false},
+			{Value: 6, Fixed: true},
+			{Value: 8, Fixed: true},
+			{Value: 5, Fixed: false},
+			{Value: 1, Fixed: false},
+			{Value: 3, Fixed: true},
+			{Value: 2, Fixed: false},
+		},
+		{
+			{Value: 5, Fixed: false},
+			{Value: 3, Fixed: false},
+			{Value: 8, Fixed: true},
+			{Value: 2, Fixed: true},
+			{Value: 1, Fixed: true},
+			{Value: 9, Fixed: false},
+			{Value: 7, Fixed: true},
+			{Value: 6, Fixed: false},
+			{Value: 4, Fixed: true},
+		},
+		{
+			{Value: 2, Fixed: false},
+			{Value: 5, Fixed: true},
+			{Value: 4, Fixed: true},
+			{Value: 1, Fixed: false},
+			{Value: 9, Fixed: true},
+			{Value: 7, Fixed: false},
+			{Value: 6, Fixed: true},
+			{Value: 8, Fixed: true},
+			{Value: 3, Fixed: false},
+		},
+		{
+			{Value: 9, Fixed: true},
+			{Value: 1, Fixed: true},
+			{Value: 3, Fixed: false},
+			{Value: 5, Fixed: true},
+			{Value: 6, Fixed: false},
+			{Value: 8, Fixed: true},
+			{Value: 4, Fixed: false},
+			{Value: 2, Fixed: true},
+			{Value: 7, Fixed: false},
+		},
+		{
+			{Value: 6, Fixed: false},
+			{Value: 8, Fixed: true},
+			{Value: 7, Fixed: false},
+			{Value: 3, Fixed: true},
+			{Value: 4, Fixed: false},
+			{Value: 2, Fixed: false},
+			{Value: 9, Fixed: false},
+			{Value: 1, Fixed: false},
+			{Value: 5, Fixed: true},
+		},
+		{
+			{Value: 3, Fixed: true},
+			{Value: 4, Fixed: false},
+			{Value: 5, Fixed: true},
+			{Value: 9, Fixed: true},
+			{Value: 2, Fixed: false},
+			{Value: 6, Fixed: true},
+			{Value: 8, Fixed: true},
+			{Value: 7, Fixed: true},
+			{Value: 1, Fixed: true},
+		},
+		{
+			{Value: 7, Fixed: false},
+			{Value: 2, Fixed: false},
+			{Value: 6, Fixed: true},
+			{Value: 8, Fixed: false},
+			{Value: 5, Fixed: false},
+			{Value: 1, Fixed: false},
+			{Value: 3, Fixed: false},
+			{Value: 4, Fixed: true},
+			{Value: 9, Fixed: false},
+		},
+		{
+			{Value: 8, Fixed: false},
+			{Value: 9, Fixed: false},
+			{Value: 1, Fixed: true},
+			{Value: 4, Fixed: false},
+			{Value: 7, Fixed: true},
+			{Value: 3, Fixed: false},
+			{Value: 2, Fixed: true},
+			{Value: 5, Fixed: false},
+			{Value: 6, Fixed: false},
+		},
 	}
-
-	var board Board
-	for row := range 9 {
-		for col := range 9 {
-			board[row][col] = Cell{
-				Value: values[row][col], 
-				Fixed: values[row][col] != 0,
-			}
-		}
-	}
-	return board
 }

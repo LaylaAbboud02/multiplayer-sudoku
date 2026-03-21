@@ -1,39 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiplayer Sudoku</title>
-    <link rel="stylesheet" href="static/css/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multiplayer Sudoku</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
 <body>
-    <main class="container">
-        <h1>Welcome to Multiplayer Sudoku!</h1>
-        <p>Join a game or create a new one to play with friends!</p>
+  <main class="container">
+    <h1>Multiplayer Sudoku</h1>
+    <p>Fill the board. You lose after 4 wrong attempts.</p>
 
-        <div class="board">
-        {{range $rowIndex, $row := .Board}}
-            {{range $colIndex, $cell := $row}}
-            <div class="cell {{if $cell.Fixed}}fixed{{else}}editable{{end}}">
-                {{if $cell.Fixed}}
-                {{$cell.Value}}
-                {{else}}
-                <input
-                    class="cell-input"
-                    type="text"
-                    inputmode="numeric"
-                    maxlength="1"
-                    data-row="{{$rowIndex}}"
-                    data-col="{{$colIndex}}"
-                />
-                {{end}}
-            </div>
+    <div class="game-info">
+      <p id="mistakes-display">Mistakes: 0 / 4</p>
+      <p id="attempts-left-display">Attempts left: 4</p>
+      <p id="status-message">Game in progress</p>
+    </div>
+
+    <div class="board">
+      {{range $rowIndex, $row := .Board}}
+        {{range $colIndex, $cell := $row}}
+          <div
+            class="cell {{if $cell.Fixed}}fixed{{else}}editable{{end}}"
+            data-row="{{$rowIndex}}"
+            data-col="{{$colIndex}}"
+          >
+            {{if $cell.Fixed}}
+              {{$cell.Value}}
+            {{else}}
+              <input
+                class="cell-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                data-row="{{$rowIndex}}"
+                data-col="{{$colIndex}}"
+                data-solution="{{$cell.Value}}"
+              />
             {{end}}
+          </div>
         {{end}}
-        </div>
-        </div>
-    </main>
+      {{end}}
+    </div>
+  </main>
 
-    <script src="static/js/app.js"></script>
+  <script src="/static/js/app.js"></script>
 </body>
 </html>
