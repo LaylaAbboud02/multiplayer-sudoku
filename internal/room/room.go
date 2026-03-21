@@ -2,24 +2,24 @@ package room
 
 import (
 	"math/rand"
-	"multiplayer-sudoku/internal/game"
 	"time"
+
+	"multiplayer-sudoku/internal/game"
 )
 
-
 type Room struct {
-	ID string
+	ID    string
 	Board game.Board
 }
 
 func NewRoom() *Room {
 	return &Room{
-		ID: generateRoomID(),
+		ID:    generateRoomID(),
 		Board: game.NewSampleBoard(),
 	}
 }
 
-func generateRoomID() string{
+func generateRoomID() string {
 	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	const length = 6
 
