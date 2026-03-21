@@ -7,11 +7,18 @@
     <link rel="stylesheet" href="static/css/styles.css">
 </head>
 <body>
-    <main>
+    <main class="container">
         <h1>Welcome to Multiplayer Sudoku!</h1>
         <p>Join a game or create a new one to play with friends!</p>
-        <div class="game-options">
-            <button id="test-btn">Join Game</button>
+
+        <div class="board">
+        {{range $rowIndex, $row := .Board}}
+            {{range $colIndex, $cell := $row}}
+            <div class="cell {{if $cell.Fixed}}fixed{{else}}editable{{end}}">
+                {{if ne $cell.Value 0}}{{$cell.Value}}{{end}}
+            </div>
+            {{end}}
+        {{end}}
         </div>
     </main>
 
