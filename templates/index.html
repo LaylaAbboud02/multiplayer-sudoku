@@ -9,41 +9,27 @@
 <body>
   <main class="container">
     <h1>Multiplayer Sudoku</h1>
-    <p>Fill the board. You lose after 4 wrong attempts.</p>
+    <p>Create a room or join one with a code.</p>
 
-    <div class="game-info">
-      <p id="mistakes-display">Mistakes: 0 / 4</p>
-      <p id="attempts-left-display">Attempts left: 4</p>
-      <p id="status-message">Game in progress</p>
-    </div>
+    {{if .Error}}
+      <p class="error-message">{{.Error}}</p>
+    {{end}}
 
-    <div class="board">
-      {{range $rowIndex, $row := .Board}}
-        {{range $colIndex, $cell := $row}}
-          <div
-            class="cell {{if $cell.Fixed}}fixed{{else}}editable{{end}}"
-            data-row="{{$rowIndex}}"
-            data-col="{{$colIndex}}"
-          >
-            {{if $cell.Fixed}}
-              {{$cell.Value}}
-            {{else}}
-              <input
-                class="cell-input"
-                type="text"
-                inputmode="numeric"
-                maxlength="1"
-                data-row="{{$rowIndex}}"
-                data-col="{{$colIndex}}"
-                data-solution="{{$cell.Value}}"
-              />
-            {{end}}
-          </div>
-        {{end}}
-      {{end}}
+    <div class="menu-card">
+      <form action="/create-room" method="POST">
+        <button type="submit" class="menu-button">Create Room</button>
+      </form>
+
+      <form action="/join-room" method="POST" class="join-form">
+        <input
+          type="text"
+          name="room_id"
+          placeholder="Enter room code"
+          class="room-input"
+        />
+        <button type="submit" class="menu-button">Join Room</button>
+      </form>
     </div>
   </main>
-
-  <script src="/static/js/app.js"></script>
 </body>
 </html>
