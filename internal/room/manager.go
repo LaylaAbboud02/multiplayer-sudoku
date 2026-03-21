@@ -1,6 +1,14 @@
 package room
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
+
+var (
+	ErrRoomNotFound = errors.New("room not found")
+	ErrRoomFull     = errors.New("room is full")
+)
 
 type Manager struct {
 	roomMu sync.RWMutex
@@ -29,6 +37,23 @@ func (m *Manager) GetRoom(id string) (*Room, bool) {
 
 	room, exists := m.rooms[id]
 	return room, exists
+}
+
+func (m *Manager) JoinRoom(id string) (*Room, error) {
+	m.roomMu.Lock()
+	defer m.roomMu.Unlock()
+
+	room, exists := m.rooms[id]
+	if !exists {
+		return nil, ErrRoomNotFound
+	}
+
+	if room.PlayerCount >= 2 {
+		return nil, ErrRoomFull
+	}
+
+	room.PlayerCount++
+	return room, nil
 }
 
 func (m *Manager) DeleteRoom(id string) {

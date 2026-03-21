@@ -8,14 +8,16 @@ import (
 )
 
 type Room struct {
-	ID    string
-	Board game.Board
+	ID          string
+	Board       game.Board
+	PlayerCount int
 }
 
 func NewRoom() *Room {
 	return &Room{
-		ID:    generateRoomID(),
-		Board: game.NewSampleBoard(),
+		ID:          generateRoomID(),
+		Board:       game.NewSampleBoard(),
+		PlayerCount: 1,
 	}
 }
 

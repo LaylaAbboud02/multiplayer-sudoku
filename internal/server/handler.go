@@ -18,8 +18,10 @@ type IndexPageData struct {
 }
 
 type GamePageData struct {
-	RoomID string
-	Board  game.Board
+	RoomID      string
+	Board       game.Board
+	PlayerCount int
+	Waiting     bool
 }
 
 func NewHandler() *Handler {
@@ -77,9 +79,17 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, exists := h.roomManager.GetRoom(roomID)
-	if !exists {
-		h.renderIndexWithError(w, "Room not found. Please check the code and try again.")
+	// _, exists := h.roomManager.GetRoom(roomID)
+	_, err := h.roomManager.JoinRoom(roomID)
+	if err != nil {
+		switch err {
+		case room.ErrRoomNotFound:
+			h.renderIndexWithError(w, "Room not found. Please check the code and try again.")
+		case room.ErrRoomFull:
+			h.renderIndexWithError(w, "Room is full. Please try joining another room.")
+		default:
+			h.renderIndexWithError(w, "An unexpected error occurred. Please try again.")
+		}
 		return
 	}
 
@@ -101,8 +111,10 @@ func (h *Handler) RoomPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := GamePageData{
-		RoomID: roomData.ID,
-		Board:  roomData.Board,
+		RoomID:      roomData.ID,
+		Board:       roomData.Board,
+		PlayerCount: roomData.PlayerCount,
+		Waiting:     roomData.PlayerCount < 2,
 	}
 
 	err := h.templates.ExecuteTemplate(w, "game.html", data)
