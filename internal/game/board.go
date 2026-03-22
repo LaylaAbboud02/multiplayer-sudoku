@@ -1,12 +1,15 @@
 package game
 
+// REpresents a single cell on the Sudoku board, with its value and whether it's a fixed clue or a user-entered value.
 type Cell struct {
 	Value int
 	Fixed bool
 }
 
+// Full 9x9 sudoku board
 type Board [9][9]Cell
 
+// hardcoded sample board for testing and demo purposes.
 func NewSampleBoard() Board {
 	return Board{
 		{

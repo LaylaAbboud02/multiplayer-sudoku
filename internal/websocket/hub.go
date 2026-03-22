@@ -6,23 +6,35 @@ import (
 	"sync"
 )
 
+// Json message sent to clients to update them on the current status of the room like how many players are in the room)
 type RoomStatusMessage struct {
-	Type string `json:"type"`
-	RoomID string `json:"room_id"`
-	PlayerCount int `json:"player_count"`
+	Type        string `json:"type"`
+	RoomID      string `json:"room_id"`
+	PlayerCount int    `json:"player_count"`
 }
 
+// MAnages all active websocket clients and their connections to rooms.
+// Contains a map of room IDs to sets of clients currently in those rooms.
+// Example:
+//
+//	{
+//	  "ABC123": {client1: true, client2: true},
+//	  "XYZ789": {client3: true},
+//	}
 type Hub struct {
 	clientsMu sync.RWMutex
 	clients   map[string]map[*Client]bool
 }
 
+// Initializes a new Hub with an empty clients map.
 func NewHub() *Hub {
 	return &Hub{
 		clients: make(map[string]map[*Client]bool),
 	}
 }
 
+// Adds a client to the hub's clients map under the appropriate room ID.
+// If the room ID doesn't exist in the map yet, it creates a new entry for it.
 func (h *Hub) Register(client *Client) {
 	h.clientsMu.Lock()
 	defer h.clientsMu.Unlock()
@@ -34,6 +46,8 @@ func (h *Hub) Register(client *Client) {
 	h.clients[client.RoomID][client] = true
 }
 
+// Removes a client from the hub's clients map.
+// If the room becomes empty after removing the client, it deletes the room entry from the map.
 func (h *Hub) Unregister(client *Client) {
 	h.clientsMu.Lock()
 	defer h.clientsMu.Unlock()
@@ -53,20 +67,21 @@ func (h *Hub) Unregister(client *Client) {
 	}
 }
 
-func (h* Hub) RoomClientCount(roomID string) int {
+// Returns the number of currently connected websocket clients in a given room.
+func (h *Hub) RoomClientCount(roomID string) int {
 	h.clientsMu.RLock()
 	defer h.clientsMu.RUnlock()
 
 	return len(h.clients[roomID])
 }
 
-
-func (h* Hub) BroadcastRoomStatus(roomID string) {
+// sends a room status update message to all clients in the specified room to let them know of the current player count.
+func (h *Hub) BroadcastRoomStatus(roomID string) {
 	count := h.RoomClientCount(roomID)
 
 	msg := RoomStatusMessage{
-		Type: "room_status",
-		RoomID: roomID,
+		Type:        "room_status",
+		RoomID:      roomID,
 		PlayerCount: count,
 	}
 

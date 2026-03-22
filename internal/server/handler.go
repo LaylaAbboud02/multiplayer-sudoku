@@ -2,9 +2,7 @@ package server
 
 import (
 	"html/template"
-	// "log"
 	"net/http"
-	// "strings"
 
 	"multiplayer-sudoku/internal/game"
 	"multiplayer-sudoku/internal/room"
@@ -13,6 +11,12 @@ import (
 	gorillaWebsocket "github.com/gorilla/websocket"
 )
 
+// Handles everything needed by the HTTP layer
+// Currently includes:
+// - parsed HTML templates
+// - in-memory room manager
+// - websocket hub for live clients
+// - the Gorilla websocket upgrader used to turn HTTP into websocket connections
 type Handler struct {
 	templates   *template.Template
 	roomManager *room.Manager
@@ -20,17 +24,7 @@ type Handler struct {
 	upgrader    gorillaWebsocket.Upgrader
 }
 
-type IndexPageData struct {
-	Error string
-}
-
-type GamePageData struct {
-	RoomID      string
-	Board       game.Board
-	PlayerCount int
-	Waiting     bool
-}
-
+// Initializes a Handler with all the necessary dependencies
 func NewHandler() *Handler {
 	tmpl := template.Must(template.ParseFiles(
 		"templates/index.html",
@@ -51,6 +45,20 @@ func NewHandler() *Handler {
 	}
 }
 
+// Holds data sent to the home page template
+type IndexPageData struct {
+	Error string
+}
+
+// Holds data sent to the game page template
+type GamePageData struct {
+	RoomID      string
+	Board       game.Board
+	PlayerCount int
+	Waiting     bool
+}
+
+// Router, maps URL paths to handler functions
 func (h *Handler) RegisterRoutes() {
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
@@ -62,6 +70,7 @@ func (h *Handler) RegisterRoutes() {
 	http.HandleFunc("/ws", h.WebSocket)
 }
 
+// Handler for the home page, renders the index.html template
 func (h *Handler) Index(w http.ResponseWriter, r *http.Request) {
 	data := IndexPageData{}
 
@@ -72,6 +81,8 @@ func (h *Handler) Index(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Handler for creating a new game room
+// Generates a new room and redirects the user to the game page for that room
 func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -82,6 +93,8 @@ func (h *Handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/room?room_id="+newRoom.ID, http.StatusSeeOther)
 }
 
+// Handler for joining an existing game room
+// Checks if the room exists and if it has space, then redirects the user to the game page for that room
 func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -95,6 +108,8 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Tries to join the room
+	// If it fails it means either the room doesn't exist or it's full, so we show an error message on the home page
 	_, err := h.roomManager.JoinRoom(roomID)
 	if err != nil {
 		switch err {
@@ -111,6 +126,11 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/room?room_id="+roomID, http.StatusSeeOther)
 }
 
+// Handler for the game page, renders the game.html template with the room data
+// Basically what it does:
+// - Checks if the room joined exists
+// - Asks the websocket hub how many live clients are connected
+// - Renders game.html with the data
 func (h *Handler) RoomPage(w http.ResponseWriter, r *http.Request) {
 	roomID := r.URL.Query().Get("room_id")
 
@@ -125,6 +145,8 @@ func (h *Handler) RoomPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// This is the number of currently connected websocket clients in this room.
+	// It is different from the stored room player count used in the room manager.
 	liveCount := h.hub.RoomClientCount(roomID)
 
 	data := GamePageData{
@@ -141,6 +163,12 @@ func (h *Handler) RoomPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Handler for the websocket endpoint:
+// - Checks that the room exists
+// - Upgrades the HTTP request to a websocket connection
+// - creates a live websocket client and registers it in the hub
+// - Broadcasts updated room presence
+// - Starts goroutines for reading and writing
 func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 	roomID := r.URL.Query().Get("room_id")
 	if roomID == "" {
@@ -154,26 +182,36 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Upgrades the HTTP connection to a WebSocket connection
 	conn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, "Failed to upgrade to WebSocket: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Creates a new websocket client
 	client := &appWebsocket.Client{
 		Conn:   conn,
 		RoomID: roomID,
 		Send:   make(chan []byte, 256),
 	}
 
+	// Registers the client in the hub
+	// Broadcasts the updated room presence to all clients in the room
 	h.hub.Register(client)
 	h.hub.BroadcastRoomStatus(roomID)
 
+	// Starts goroutines for reading and writing messages for this client
 	go h.writePump(client)
 	go h.readPump(client)
 
 }
 
+// Continuously reads messages from the websocket connection until it encounters an error (like the client disconnecting)
+// When the connection ends:
+// - Client is unregistered from the hub
+// - Room status is broadcast again
+// - Websocket connection is closed
 func (h *Handler) readPump(client *appWebsocket.Client) {
 	defer func() {
 		h.hub.Unregister(client)
@@ -189,6 +227,7 @@ func (h *Handler) readPump(client *appWebsocket.Client) {
 	}
 }
 
+// Continuously listens for messages to send to the client from the Send channel until it encounters an error (like the client disconnecting)
 func (h *Handler) writePump(client *appWebsocket.Client) {
 	defer client.Conn.Close()
 
@@ -200,6 +239,7 @@ func (h *Handler) writePump(client *appWebsocket.Client) {
 	}
 }
 
+// Helper used to render the home page with an error message
 func (h *Handler) renderIndexWithError(w http.ResponseWriter, message string) {
 	data := IndexPageData{
 		Error: message,
