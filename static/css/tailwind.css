@@ -1,10 +1,9 @@
 @import "tailwindcss";
 
-/* Make sure Tailwind scans your Go templates and JS too */
 @source "../../templates";
 @source "../js";
 
-/* Custom Sudoku-specific CSS that is awkward to express inline */
+/* thicker 3x3 Sudoku borders */
 .cell:nth-child(9n + 3),
 .cell:nth-child(9n + 6) {
   border-right-width: 3px;
