@@ -2,15 +2,22 @@ package server
 
 import (
 	"html/template"
+	// "log"
 	"net/http"
+	// "strings"
 
 	"multiplayer-sudoku/internal/game"
 	"multiplayer-sudoku/internal/room"
+	appWebsocket "multiplayer-sudoku/internal/websocket"
+
+	gorillaWebsocket "github.com/gorilla/websocket"
 )
 
 type Handler struct {
 	templates   *template.Template
 	roomManager *room.Manager
+	hub         *appWebsocket.Hub
+	upgrader    gorillaWebsocket.Upgrader
 }
 
 type IndexPageData struct {
@@ -33,6 +40,14 @@ func NewHandler() *Handler {
 	return &Handler{
 		templates:   tmpl,
 		roomManager: room.NewManager(),
+		hub:         appWebsocket.NewHub(),
+		upgrader: gorillaWebsocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		},
 	}
 }
 
@@ -44,6 +59,7 @@ func (h *Handler) RegisterRoutes() {
 	http.HandleFunc("/create-room", h.CreateRoom)
 	http.HandleFunc("/join-room", h.JoinRoom)
 	http.HandleFunc("/room", h.RoomPage)
+	http.HandleFunc("/ws", h.WebSocket)
 }
 
 func (h *Handler) Index(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +95,6 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// _, exists := h.roomManager.GetRoom(roomID)
 	_, err := h.roomManager.JoinRoom(roomID)
 	if err != nil {
 		switch err {
@@ -110,17 +125,78 @@ func (h *Handler) RoomPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	liveCount := h.hub.RoomClientCount(roomID)
+
 	data := GamePageData{
 		RoomID:      roomData.ID,
 		Board:       roomData.Board,
-		PlayerCount: roomData.PlayerCount,
-		Waiting:     roomData.PlayerCount < 2,
+		PlayerCount: liveCount,
+		Waiting:     liveCount < 2,
 	}
 
 	err := h.templates.ExecuteTemplate(w, "game.html", data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+}
+
+func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
+	roomID := r.URL.Query().Get("room_id")
+	if roomID == "" {
+		http.Error(w, "Missing room_id parameter", http.StatusBadRequest)
+		return
+	}
+
+	_, exists := h.roomManager.GetRoom(roomID)
+	if !exists {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	conn, err := h.upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		http.Error(w, "Failed to upgrade to WebSocket: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	client := &appWebsocket.Client{
+		Conn:   conn,
+		RoomID: roomID,
+		Send:   make(chan []byte, 256),
+	}
+
+	h.hub.Register(client)
+	h.hub.BroadcastRoomStatus(roomID)
+
+	go h.writePump(client)
+	go h.readPump(client)
+
+}
+
+func (h *Handler) readPump(client *appWebsocket.Client) {
+	defer func() {
+		h.hub.Unregister(client)
+		h.hub.BroadcastRoomStatus(client.RoomID)
+		client.Conn.Close()
+	}()
+
+	for {
+		_, _, err := client.Conn.ReadMessage()
+		if err != nil {
+			break
+		}
+	}
+}
+
+func (h *Handler) writePump(client *appWebsocket.Client) {
+	defer client.Conn.Close()
+
+	for msg := range client.Send {
+		err := client.Conn.WriteMessage(gorillaWebsocket.TextMessage, msg)
+		if err != nil {
+			break
+		}
 	}
 }
 

@@ -13,13 +13,13 @@
       Room code: <strong>{{.RoomID}}</strong>
     </p>
     <p class="mt-1 text-base text-zinc-700">
-      Players in room: <strong>{{.PlayerCount}} / 2</strong>
+      Live players connected: <strong id="live-player-count">{{.PlayerCount}}</strong> / 2
     </p>
 
     {{if .Waiting}}
-      <p class="mt-2 font-semibold text-amber-700">Waiting for opponent...</p>
+      <p id="live-room-status" class="mt-2 font-semibold text-amber-700">Waiting for opponent...</p>
     {{else}}
-      <p class="mt-2 font-semibold text-emerald-700">Both players connected.</p>
+      <p id="live-room-status" class="mt-2 font-semibold text-emerald-700">Both players connected.</p>
     {{end}}
 
     <p class="mt-1 text-base text-zinc-700">
@@ -63,6 +63,9 @@
     </p>
   </main>
 
+  <script>
+    const roomId = "{{.RoomID}}";
+  </script>
   <script src="/static/js/app.js"></script>
 </body>
 </html>
