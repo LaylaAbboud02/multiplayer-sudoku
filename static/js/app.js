@@ -8,11 +8,15 @@ const statusMessage = document.getElementById("status-message");
 const livePlayerCount = document.getElementById("live-player-count");
 const liveRoomStatus = document.getElementById("live-room-status");
 
+const pageRoot = document.querySelector("main");
+let roomReady = pageRoot?.dataset.roomReady === "true";
+
 let mistakes = 0;
 const maxMistakes = 4;
 let gameOver = false;
 
 updateMistakeUI();
+updateRoomReadyUI();
 connectWebSocket();
 
 inputs.forEach((input) => {
@@ -20,7 +24,7 @@ inputs.forEach((input) => {
   // We use this to block invalid keys early.
   input.addEventListener("keydown", (event) => {
     // If the game already ended, do not let the user type anything else.
-    if (gameOver) {
+    if (gameOver || !roomReady) {
       event.preventDefault();
       return;
     }
@@ -52,7 +56,7 @@ inputs.forEach((input) => {
   // This is useful as a second safety layer, especially for paste or odd browser behavior.
   input.addEventListener("input", (event) => {
     // If the game is over, immediately clear anything typed.
-    if (gameOver) {
+    if (gameOver || !roomReady) {
       event.target.value = "";
       return;
     }
@@ -106,6 +110,9 @@ function updateLiveRoomStatus(playerCount) {
 
   }
 
+  roomReady = playerCount >= 2;
+  updateRoomReadyUI();
+
   if(liveRoomStatus) {
     if(playerCount < 2){
       liveRoomStatus.textContent = "Waiting for another player to join...";
@@ -115,6 +122,49 @@ function updateLiveRoomStatus(playerCount) {
       liveRoomStatus.className = "mt-2 font-semibold text-emerald-700";
     }
   }
+}
+
+function updateRoomReadyUI() {
+  const shouldDisableInputs = !roomReady || gameOver;
+
+  inputs.forEach((input) => {
+    input.disabled = shouldDisableInputs;
+  });
+
+  if(gameOver) return;
+
+  if(!roomReady){
+    statusMessage.textContent = "Waiting for another player to join...";
+  } else {
+    statusMessage.textContent = "Game in progress";
+  }
+}
+
+function updateMistakeUI() {
+  mistakesDisplay.textContent = `Mistakes: ${mistakes} / ${maxMistakes}`;
+  attemptsLeftDisplay.textContent = `Attempts left: ${maxMistakes - mistakes}`;
+}
+
+function endGameLoss() {
+  gameOver = true;
+  statusMessage.textContent = "Game over";
+  updateRoomReadyUI();
+  alert("Game over. You reached the maximum number of mistakes.");
+}
+
+function checkForWin() {
+  for (const input of inputs) {
+    const correctValue = Number(input.dataset.solution);
+
+    if (Number(input.value) !== correctValue) {
+      return;
+    }
+  }
+
+  gameOver = true;
+  statusMessage.textContent = "Puzzle solved!";
+  updateRoomReadyUI();
+  alert("Congratulations! You solved the puzzle.");
 }
 
 function connectWebSocket() {
@@ -158,37 +208,4 @@ function connectWebSocket() {
   socket.addEventListener("error", (error) => {
     console.error("WebSocket error:", error);
   });
-}
-
-function updateMistakeUI() {
-  mistakesDisplay.textContent = `Mistakes: ${mistakes} / ${maxMistakes}`;
-  attemptsLeftDisplay.textContent = `Attempts left: ${maxMistakes - mistakes}`;
-}
-
-function endGameLoss() {
-  gameOver = true;
-  statusMessage.textContent = "Game over";
-  disableAllInputs();
-  alert("Game over. You reached the maximum number of mistakes.");
-}
-
-function disableAllInputs() {
-  inputs.forEach((input) => {
-    input.disabled = true;
-  });
-}
-
-function checkForWin() {
-  for (const input of inputs) {
-    const correctValue = Number(input.dataset.solution);
-
-    if (Number(input.value) !== correctValue) {
-      return;
-    }
-  }
-
-  gameOver = true;
-  statusMessage.textContent = "Puzzle solved!";
-  disableAllInputs();
-  alert("Congratulations! You solved the puzzle.");
 }
