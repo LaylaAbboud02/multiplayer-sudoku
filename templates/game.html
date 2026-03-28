@@ -26,12 +26,23 @@
           </div>
 
           <div class="mt-6 space-y-4 text-left">
-            <div class="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50 p-4 shadow-sm">
+            <div
+              id="room-code-container"
+              class="group cursor-pointer rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50 p-4 shadow-sm transition hover:border-violet-400 hover:shadow-md"
+              onclick="copyRoomCode()"
+            >
               <p class="text-xs font-semibold uppercase tracking-[0.18em] text-violet-600">
                 Room code
               </p>
-              <p class="mt-2 text-2xl font-black tracking-[0.2em] text-zinc-900">
-                {{.RoomID}}
+              <div class="mt-2 flex items-center justify-between">
+                <p id="room-code" class="text-2xl font-black tracking-[0.2em] text-zinc-900">
+                  {{.RoomID}}
+                </p>
+                <span class="copy-icon opacity-60 transition group-hover:opacity-100">📋</span>
+                <span class="copied-icon hidden opacity-60">✓</span>
+              </div>
+              <p class="mt-1 text-xs text-violet-500 opacity-0 transition group-hover:opacity-100">
+                Click to copy
               </p>
             </div>
 

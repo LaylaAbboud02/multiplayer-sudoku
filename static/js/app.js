@@ -8,12 +8,36 @@ const statusMessage = document.getElementById("status-message");
 const livePlayerCount = document.getElementById("live-player-count");
 const liveRoomStatus = document.getElementById("live-room-status");
 
+const boardElement = document.querySelector(".board");
+const boardWrapper = document.querySelector(".overflow-x-auto");
+
 const pageRoot = document.querySelector("main");
 let roomReady = pageRoot?.dataset.roomReady === "true";
 
 let mistakes = 0;
 const maxMistakes = 4;
 let gameOver = false;
+
+function copyRoomCode() {
+  const roomCode = document.getElementById("room-code")?.textContent?.trim();
+  if (!roomCode) return;
+
+  navigator.clipboard.writeText(roomCode).then(() => {
+    // Show copied state
+    const copyIcon = document.querySelector(".copy-icon");
+    const copiedIcon = document.querySelector(".copied-icon");
+    if (copyIcon) copyIcon.classList.add("hidden");
+    if (copiedIcon) copiedIcon.classList.remove("hidden");
+
+    // Reset after 2 seconds
+    setTimeout(() => {
+      if (copyIcon) copyIcon.classList.remove("hidden");
+      if (copiedIcon) copiedIcon.classList.add("hidden");
+    }, 2000);
+  }).catch((err) => {
+    console.error("Failed to copy:", err);
+  });
+}
 
 updateMistakeUI();
 updateRoomReadyUI();
@@ -130,6 +154,15 @@ function updateRoomReadyUI() {
   inputs.forEach((input) => {
     input.disabled = shouldDisableInputs;
   });
+
+  // Toggle blur effect on the board when not both players are connected
+  if (boardWrapper) {
+    if (!roomReady || gameOver) {
+      boardWrapper.classList.add("blur-sm", "select-none", "pointer-events-none", "p-4");
+    } else {
+      boardWrapper.classList.remove("blur-sm", "select-none", "pointer-events-none", "p-4");
+    }
+  }
 
   if(gameOver) return;
 
