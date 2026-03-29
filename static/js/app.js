@@ -7,16 +7,24 @@ const statusMessage = document.getElementById("status-message");
 
 const livePlayerCount = document.getElementById("live-player-count");
 const liveRoomStatus = document.getElementById("live-room-status");
+const playerRole = document.getElementById("player-role");
+const gameStateDisplay = document.getElementById("game-state-display");
 
-const boardElement = document.querySelector(".board");
 const boardWrapper = document.querySelector(".overflow-x-auto");
 
 const pageRoot = document.querySelector("main");
 let roomReady = pageRoot?.dataset.roomReady === "true";
+let gameState = pageRoot?.dataset.gameState || "waiting";
+let playerNumber = null;
 
 let mistakes = 0;
 const maxMistakes = 4;
 let gameOver = false;
+
+updateMistakeUI();
+updateRoomReadyUI();
+updateGameStateUI();
+connectWebSocket();
 
 function copyRoomCode() {
   const roomCode = document.getElementById("room-code")?.textContent?.trim();
@@ -38,10 +46,6 @@ function copyRoomCode() {
     console.error("Failed to copy:", err);
   });
 }
-
-updateMistakeUI();
-updateRoomReadyUI();
-connectWebSocket();
 
 inputs.forEach((input) => {
   // Listen for keyboard presses before the character is actually inserted.
@@ -128,14 +132,16 @@ inputs.forEach((input) => {
   });
 });
 
-function updateLiveRoomStatus(playerCount) {
+function updateLiveRoomStatus(playerCount, newGameState = game_state) {
   if(livePlayerCount) {
     livePlayerCount.textContent = playerCount;
 
   }
 
   roomReady = playerCount >= 2;
+  gameState = newGameState;
   updateRoomReadyUI();
+  updateGameStateUI();
 
   if(liveRoomStatus) {
     if(playerCount < 2){
@@ -173,9 +179,40 @@ function updateRoomReadyUI() {
   }
 }
 
+function updateGameStateUI() {
+  if(!gameStateDisplay) return;
+  
+  switch(gameState) {
+    case "waiting":
+      gameStateDisplay.textContent = "Waiting";
+      break;
+    case "ready":
+      gameStateDisplay.textContent = "Ready";
+      break;
+    case "in_progress":
+      gameStateDisplay.textContent = "In Progress";
+      break;
+    case "finished":
+      gameStateDisplay.textContent = "Finished";
+      break;
+    default:
+      gameStateDisplay.textContent = gameState;
+  }
+}
+
+function updatePlayerRoleUI() {
+  if(!playerRole) return;
+
+  if(playerNumber === null) {
+    playerRole.textContent = "Assigning...";
+  } else {
+    playerRole.textContent = `Player ${playerNumber}`;
+  }
+}
+
 function updateMistakeUI() {
-  mistakesDisplay.textContent = `Mistakes: ${mistakes} / ${maxMistakes}`;
-  attemptsLeftDisplay.textContent = `Attempts left: ${maxMistakes - mistakes}`;
+  mistakesDisplay.textContent = `${mistakes} / ${maxMistakes}`;
+  attemptsLeftDisplay.textContent = `${maxMistakes - mistakes}`;
 }
 
 function endGameLoss() {
@@ -227,7 +264,13 @@ function connectWebSocket() {
 
       if (msg.type === "room_status") {
         console.log("Updating live room status:", msg.player_count);
-        updateLiveRoomStatus(msg.player_count);
+        updateLiveRoomStatus(msg.player_count, msg.game_state);
+      }
+
+      if(msg.type === "player_assignment"){
+        console.log("Received player assignment:", msg.player_number);
+        playerNumber = msg.player_number;
+        updatePlayerRoleUI();
       }
     } catch (error) {
       console.error("Failed to parse WebSocket message:", error);
@@ -236,6 +279,10 @@ function connectWebSocket() {
 
   socket.addEventListener("close", (event) => {
     console.log("WebSocket closed.", event);
+    roomReady = false;
+    gameState = "waiting";
+    updateRoomReadyUI();
+    updateGameStateUI();
   });
 
   socket.addEventListener("error", (error) => {

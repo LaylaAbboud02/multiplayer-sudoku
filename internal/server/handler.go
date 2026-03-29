@@ -56,6 +56,7 @@ type GamePageData struct {
 	Board       game.Board
 	PlayerCount int
 	Waiting     bool
+	GameState   string
 }
 
 // Router, maps URL paths to handler functions
@@ -154,6 +155,7 @@ func (h *Handler) RoomPage(w http.ResponseWriter, r *http.Request) {
 		Board:       roomData.Board,
 		PlayerCount: liveCount,
 		Waiting:     liveCount < 2,
+		GameState:   string(roomData.GameState),
 	}
 
 	err := h.templates.ExecuteTemplate(w, "game.html", data)
@@ -176,7 +178,7 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, exists := h.roomManager.GetRoom(roomID)
+	roomData, exists := h.roomManager.GetRoom(roomID)
 	if !exists {
 		http.Error(w, "Room not found", http.StatusNotFound)
 		return
@@ -189,17 +191,24 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	playerNumber := h.hub.RoomClientCount(roomID) + 1
+	if playerNumber > 2 {
+		playerNumber = 2
+	}
+
 	// Creates a new websocket client
 	client := &appWebsocket.Client{
 		Conn:   conn,
 		RoomID: roomID,
+		PlayerNumber: playerNumber,
 		Send:   make(chan []byte, 256),
 	}
 
 	// Registers the client in the hub
 	// Broadcasts the updated room presence to all clients in the room
 	h.hub.Register(client)
-	h.hub.BroadcastRoomStatus(roomID)
+	h.hub.SendPlayerAssignment(client)
+	h.hub.BroadcastRoomStatus(roomID, h.hub.RoomClientCount(roomID), string(roomData.GameState))
 
 	// Starts goroutines for reading and writing messages for this client
 	go h.writePump(client)
@@ -215,7 +224,11 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) readPump(client *appWebsocket.Client) {
 	defer func() {
 		h.hub.Unregister(client)
-		h.hub.BroadcastRoomStatus(client.RoomID)
+
+		roomData, exists := h.roomManager.GetRoom(client.RoomID)
+		if exists {
+			h.hub.BroadcastRoomStatus(client.RoomID, h.hub.RoomClientCount(client.RoomID), string(roomData.GameState))
+		}
 		client.Conn.Close()
 	}()
 

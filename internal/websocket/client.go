@@ -18,6 +18,9 @@ type Client struct {
 	// This lets the hub group clients by room and broadcast updates only to the right people.
 	RoomID string
 
+	// PlayerNumber indicates whether this client is player 1 or player 2 in the room.
+	PlayerNumber int
+
 	// Send is a channel used by the hub to send messages to this client.
 	// When the hub wants to send a message to this client, it writes the message to this channel.
 	// The client's writePump goroutine listens on this channel and writes any messages it receives to the websocket connection.

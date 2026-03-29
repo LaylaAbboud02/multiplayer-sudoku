@@ -11,6 +11,12 @@ type RoomStatusMessage struct {
 	Type        string `json:"type"`
 	RoomID      string `json:"room_id"`
 	PlayerCount int    `json:"player_count"`
+	GameState   string `json:"game_state"`
+}
+
+type PlayerAssignmentMessage struct {
+	Type         string `json:"type"`
+	PlayerNumber int    `json:"player_number"`
 }
 
 // MAnages all active websocket clients and their connections to rooms.
@@ -75,14 +81,32 @@ func (h *Hub) RoomClientCount(roomID string) int {
 	return len(h.clients[roomID])
 }
 
-// sends a room status update message to all clients in the specified room to let them know of the current player count.
-func (h *Hub) BroadcastRoomStatus(roomID string) {
-	count := h.RoomClientCount(roomID)
+func (h *Hub) SendPlayerAssignment(client *Client) {
+	msg := PlayerAssignmentMessage{
+		Type:         "player_assignment",
+		PlayerNumber: client.PlayerNumber,
+	}
 
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		log.Println("Failed to marshal player assignment message", err)
+		return
+	}
+
+	select {
+	case client.Send <- payload:
+	default:
+		log.Printf("Failed to send player assignment message to client in room %s", client.RoomID)
+	}
+}
+
+// sends a room status update message to all clients in the specified room to let them know of the current player count.
+func (h *Hub) BroadcastRoomStatus(roomID string, playerCount int, gameState string) {
 	msg := RoomStatusMessage{
-		Type:        "room_status",
-		RoomID:      roomID,
-		PlayerCount: count,
+		Type: "room_status",
+		RoomID: roomID,
+		PlayerCount: playerCount,
+		GameState: gameState,
 	}
 
 	payload, err := json.Marshal(msg)
@@ -98,7 +122,7 @@ func (h *Hub) BroadcastRoomStatus(roomID string) {
 		select {
 		case client.Send <- payload:
 		default:
-			// Skip for nwo
+			log.Printf("Failed to send room status message to client in room %s", roomID)
 		}
 	}
 }

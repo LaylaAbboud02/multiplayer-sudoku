@@ -64,7 +64,26 @@ func (m *Manager) JoinRoom(id string) (*Room, error) {
 	}
 
 	room.PlayerCount++
+
+	if room.PlayerCount == 2 {
+		room.GameState = GameStateReady
+	}
+
 	return room, nil
+}
+
+// Not used
+func (m *Manager) SetGameState(roomID string, state GameState) error {
+	m.roomMu.Lock()
+	defer m.roomMu.Unlock()
+
+	room ,exists := m.rooms[roomID]
+	if !exists {
+		return ErrRoomNotFound
+	}
+
+	room.GameState = state
+	return nil
 }
 
 // Deletes a room from the manager by its ID.
