@@ -6,6 +6,12 @@ import (
 	"sync"
 )
 
+const (
+	// Message types sent to clients
+	MessageTypeRoomStatus       = "room_status"
+	MessageTypePlayerAssignment = "player_assignment"
+)
+
 // Json message sent to clients to update them on the current status of the room like how many players are in the room)
 type RoomStatusMessage struct {
 	Type        string `json:"type"`
@@ -83,7 +89,7 @@ func (h *Hub) RoomClientCount(roomID string) int {
 
 func (h *Hub) SendPlayerAssignment(client *Client) {
 	msg := PlayerAssignmentMessage{
-		Type:         "player_assignment",
+		Type:         MessageTypePlayerAssignment,
 		PlayerNumber: client.PlayerNumber,
 	}
 
@@ -103,7 +109,7 @@ func (h *Hub) SendPlayerAssignment(client *Client) {
 // sends a room status update message to all clients in the specified room to let them know of the current player count.
 func (h *Hub) BroadcastRoomStatus(roomID string, playerCount int, gameState string) {
 	msg := RoomStatusMessage{
-		Type: "room_status",
+		Type: MessageTypeRoomStatus,
 		RoomID: roomID,
 		PlayerCount: playerCount,
 		GameState: gameState,
