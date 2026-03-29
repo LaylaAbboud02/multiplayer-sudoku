@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"multiplayer-sudoku/internal/room"
 	appWebsocket "multiplayer-sudoku/internal/websocket"
 
 	gorillaWebsocket "github.com/gorilla/websocket"
@@ -27,6 +28,12 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	liveCount := h.hub.RoomClientCount(roomID)
+	if liveCount >= 2 {
+		http.Error(w, "Room is full", http.StatusForbidden)
+		return
+	}
+
 	// Upgrades the HTTP connection to a WebSocket connection
 	conn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -34,10 +41,7 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerNumber := h.hub.RoomClientCount(roomID) + 1
-	if playerNumber > 2 {
-		playerNumber = 2
-	}
+	playerNumber := liveCount + 1
 
 	// Creates a new websocket client
 	client := &appWebsocket.Client{
@@ -50,6 +54,12 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 	// Registers the client in the hub
 	// Broadcasts the updated room presence to all clients in the room
 	h.hub.Register(client)
+
+	if h.hub.RoomClientCount(roomID) == 2 {
+		_ = h.roomManager.SetGameState(roomID, room.GameStateReady)
+		roomData.GameState = room.GameStateReady
+	}
+
 	h.hub.SendPlayerAssignment(client)
 	h.hub.BroadcastRoomStatus(roomID, h.hub.RoomClientCount(roomID), string(roomData.GameState))
 
@@ -68,9 +78,14 @@ func (h *Handler) readPump(client *appWebsocket.Client) {
 	defer func() {
 		h.hub.Unregister(client)
 
+		liveCount := h.hub.RoomClientCount(client.RoomID)
+		if liveCount < 2 {
+			_ = h.roomManager.SetGameState(client.RoomID, room.GameStateWaiting)
+		}
+
 		roomData, exists := h.roomManager.GetRoom(client.RoomID)
 		if exists {
-			h.hub.BroadcastRoomStatus(client.RoomID, h.hub.RoomClientCount(client.RoomID), string(roomData.GameState))
+			h.hub.BroadcastRoomStatus(client.RoomID, liveCount, string(roomData.GameState))
 		}
 		client.Conn.Close()
 	}()

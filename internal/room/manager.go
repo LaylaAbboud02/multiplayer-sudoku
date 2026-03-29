@@ -59,16 +59,6 @@ func (m *Manager) JoinRoom(id string) (*Room, error) {
 		return nil, ErrRoomNotFound
 	}
 
-	if room.PlayerCount >= 2 {
-		return nil, ErrRoomFull
-	}
-
-	room.PlayerCount++
-
-	if room.PlayerCount == 2 {
-		room.GameState = GameStateReady
-	}
-
 	return room, nil
 }
 

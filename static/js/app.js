@@ -279,10 +279,20 @@ function connectWebSocket() {
 
   socket.addEventListener("close", (event) => {
     console.log("WebSocket closed.", event);
+
     roomReady = false;
     gameState = "waiting";
+
     updateRoomReadyUI();
     updateGameStateUI();
+
+    if(playerRole) {
+      playerRole.textContent = "Not Connected";
+    }
+
+    if(statusMessage) {
+      statusMessage.textContent = "Connection lost or room is unavailable.";
+    }
   });
 
   socket.addEventListener("error", (error) => {

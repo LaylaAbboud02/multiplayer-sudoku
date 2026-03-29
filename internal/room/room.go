@@ -22,7 +22,6 @@ const (
 type Room struct {
 	ID          string
 	Board       game.Board
-	PlayerCount int
 	GameState   GameState
 }
 
@@ -31,7 +30,6 @@ func NewRoom() *Room {
 	return &Room{
 		ID:          generateRoomID(),
 		Board:       game.NewSampleBoard(),
-		PlayerCount: 1,
 		GameState:   GameStateWaiting,
 	}
 }

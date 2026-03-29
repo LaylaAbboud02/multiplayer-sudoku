@@ -74,6 +74,11 @@ func (h *Handler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.hub.RoomClientCount(roomID) >= 2 {
+		h.renderIndexWithError(w, "Room is full. Please try joining another room.")
+		return
+	}
+
 	http.Redirect(w, r, "/room?room_id="+roomID, http.StatusSeeOther)
 }
 
