@@ -3,6 +3,8 @@
 @source "../../templates";
 @source "../js";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* thicker 3x3 Sudoku borders */
 .cell:nth-child(9n + 3),
 .cell:nth-child(9n + 6) {

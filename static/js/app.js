@@ -182,12 +182,13 @@ function updateLiveRoomStatus(playerCount, newGameState = gameState) {
   updateGameStateUI();
 
   if (liveRoomStatus) {
+    const isDark = document.documentElement.classList.contains('dark');
     if (playerCount < 2) {
       liveRoomStatus.textContent = "Waiting for another player to join...";
-      liveRoomStatus.className = "mt-2 font-semibold text-amber-700";
+      liveRoomStatus.className = isDark ? "mt-2 font-semibold text-amber-400" : "mt-2 font-semibold text-amber-700";
     } else {
       liveRoomStatus.textContent = "Both players connected";
-      liveRoomStatus.className = "mt-2 font-semibold text-emerald-700";
+      liveRoomStatus.className = isDark ? "mt-2 font-semibold text-emerald-400" : "mt-2 font-semibold text-emerald-700";
     }
   }
 }

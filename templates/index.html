@@ -6,49 +6,49 @@
   <title>Multiplayer Sudoku</title>
   <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
-<body class="min-h-screen bg-gradient-to-br from-fuchsia-100 via-rose-50 to-sky-100 text-zinc-900 bg-red-700">
+<body class="min-h-screen bg-gradient-to-br from-fuchsia-100 via-rose-50 to-sky-100 text-zinc-900 bg-red-700 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-900 dark:text-zinc-100">
   <div class="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
     <!-- soft background blobs -->
-    <div class="pointer-events-none absolute -left-16 top-10 h-56 w-56 rounded-full bg-pink-300/30 blur-3xl"></div>
-    <div class="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-sky-300/30 blur-3xl"></div>
-    <div class="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-violet-300/20 blur-3xl"></div>
+    <div class="pointer-events-none absolute -left-16 top-10 h-56 w-56 rounded-full bg-pink-300/30 blur-3xl dark:bg-pink-500/10"></div>
+    <div class="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-sky-300/30 blur-3xl dark:bg-sky-500/10"></div>
+    <div class="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-500/10"></div>
 
     <main class="relative w-full max-w-2xl">
-      <div class="rounded-[2rem] border border-white/60 bg-white/75 p-8 shadow-[0_20px_80px_rgba(168,85,247,0.18)] backdrop-blur-xl sm:p-10">
+      <div class="rounded-[2rem] border border-white/60 bg-white/75 p-8 shadow-[0_20px_80px_rgba(168,85,247,0.18)] backdrop-blur-xl sm:p-10 dark:border-zinc-700/60 dark:bg-zinc-800/75 dark:shadow-[0_20px_80px_rgba(168,85,247,0.09)]">
         <div class="mx-auto max-w-xl text-center">
 
-          <h1 class="text-4xl font-black tracking-tight text-zinc-900 sm:text-5xl">
+          <h1 class="text-4xl font-black tracking-tight text-zinc-900 sm:text-5xl dark:text-zinc-100">
             Multiplayer Sudoku
           </h1>
 
-          <p class="mx-auto mt-4 max-w-lg text-base leading-7 text-zinc-600 sm:text-lg">
+          <p class="mx-auto mt-4 max-w-lg text-base leading-7 text-zinc-600 sm:text-lg dark:text-zinc-400">
             Create a room, send the code to a friend, and race each other a Sudoku battle.
           </p>
 
           {{if .Error}}
-            <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 shadow-sm">
+            <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 shadow-sm dark:border-red-700 dark:bg-red-900/50 dark:text-red-300">
               {{.Error}}
             </div>
           {{end}}
 
           <div class="mt-8 grid gap-4 sm:grid-cols-2">
             <form action="/create-room" method="POST" class="h-full">
-              <div class="flex h-full flex-col justify-between rounded-[1.5rem] border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50 p-5 text-left shadow-sm">
+              <div class="flex h-full flex-col justify-between rounded-[1.5rem] border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50 p-5 text-left shadow-sm dark:border-violet-700 dark:from-violet-900/50 dark:to-fuchsia-900/50">
                 <div>
-                  <p class="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600">
+                  <p class="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-400">
                     Quick start
                   </p>
-                  <h2 class="mt-2 text-2xl font-bold text-zinc-900">
+                  <h2 class="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                     Create a room
                   </h2>
-                  <p class="mt-2 text-sm leading-6 text-zinc-600">
+                  <p class="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                     Start a fresh match instantly and get a room code you can share.
                   </p>
                 </div>
 
                 <button
                   type="submit"
-                  class="mt-5 inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-zinc-900/15 transition duration-200 hover:-translate-y-0.5 hover:bg-zinc-800"
+                  class="mt-5 inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-zinc-900/15 transition duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-zinc-100/15 dark:hover:bg-zinc-200"
                 >
                   Create Room
                 </button>
@@ -56,15 +56,15 @@
             </form>
 
             <form action="/join-room" method="POST" class="h-full">
-              <div class="flex h-full flex-col justify-between rounded-[1.5rem] border border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-50 p-5 text-left shadow-sm">
+              <div class="flex h-full flex-col justify-between rounded-[1.5rem] border border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-50 p-5 text-left shadow-sm dark:border-sky-700 dark:from-sky-900/50 dark:to-cyan-900/50">
                 <div>
-                  <p class="text-sm font-semibold uppercase tracking-[0.18em] text-sky-600">
+                  <p class="text-sm font-semibold uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400">
                     Already invited?
                   </p>
-                  <h2 class="mt-2 text-2xl font-bold text-zinc-900">
+                  <h2 class="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                     Join a room
                   </h2>
-                  <p class="mt-2 text-sm leading-6 text-zinc-600">
+                  <p class="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                     Paste the room code and hop straight into the match.
                   </p>
                 </div>
@@ -74,11 +74,11 @@
                     type="text"
                     name="room_id"
                     placeholder="Enter room code"
-                    class="w-full rounded-2xl border border-sky-200 bg-white px-4 py-3 text-center text-base font-medium tracking-[0.18em] text-zinc-900 uppercase shadow-sm outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-200/60"
+                    class="w-full rounded-2xl border border-sky-200 bg-white px-4 py-3 text-center text-base font-medium tracking-[0.18em] text-zinc-900 uppercase shadow-sm outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-200/60 dark:border-sky-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-sky-500 dark:focus:ring-sky-500/60"
                   />
                   <button
                     type="submit"
-                    class="inline-flex w-full items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-zinc-900/15 transition duration-200 hover:-translate-y-0.5 hover:bg-zinc-800"
+                    class="inline-flex w-full items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-zinc-900/15 transition duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-zinc-100/15 dark:hover:bg-zinc-200"
                   >
                     Join Room
                   </button>
@@ -87,13 +87,41 @@
             </form>
           </div>
 
-          <div class="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm text-zinc-500">
-            <span class="rounded-full bg-white/80 px-3 py-1 shadow-sm">2 players</span>
-            <span class="rounded-full bg-white/80 px-3 py-1 shadow-sm">mistake limit mode</span>
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm text-zinc-500 dark:text-zinc-400">
+            <span class="rounded-full bg-white/80 px-3 py-1 shadow-sm dark:bg-zinc-800/80">2 players</span>
+            <span class="rounded-full bg-white/80 px-3 py-1 shadow-sm dark:bg-zinc-800/80">mistake limit mode</span>
           </div>
         </div>
       </div>
     </main>
   </div>
+
+  <!-- Night mode toggle button -->
+  <button
+    id="night-mode-toggle"
+    class="fixed bottom-6 right-6 inline-flex items-center justify-center rounded-full bg-white/80 px-4 py-2 text-sm font-medium text-zinc-700 shadow-lg transition hover:bg-white hover:text-zinc-900 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-zinc-100"
+    aria-label="Toggle night mode"
+  >
+    🌙
+  </button>
+
+  <script>
+    // Night mode toggle
+    const nightModeBtn = document.getElementById('night-mode-toggle');
+    const html = document.documentElement;
+    
+    // Check saved preference
+    if (localStorage.getItem('nightMode') === 'true') {
+      html.classList.add('dark');
+      nightModeBtn.textContent = '☀️';
+    }
+    
+    nightModeBtn.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      const isDark = html.classList.contains('dark');
+      localStorage.setItem('nightMode', isDark);
+      nightModeBtn.textContent = isDark ? '☀️' : '🌙';
+    });
+  </script>
 </body>
 </html>
