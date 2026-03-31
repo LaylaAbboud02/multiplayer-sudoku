@@ -1,6 +1,8 @@
 package server
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 
 	"multiplayer-sudoku/internal/room"
@@ -69,6 +71,35 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (h *Handler) handleClientMessage(client *appWebsocket.Client, raw []byte) {
+	var msg appWebsocket.ClientMessage
+
+	if err:= json.Unmarshal(raw, &msg); err != nil {
+		log.Printf("Failed to unmarshal client message: %v", err)
+		return
+	}
+
+	switch msg.Type {
+		case appWebsocket.MessageTypePlayerFinished:
+			h.handlePlayerFinished(client)
+		default:
+			log.Printf("Unknown message type received from client: %s", msg.Type)
+	}
+}
+
+func (h *Handler) handlePlayerFinished(client *appWebsocket.Client) {
+	roomData, wasMarkedFinished, err := h.roomManager.MarkFinished(client.RoomID, client.PlayerNumber)
+	if err != nil {
+		log.Printf("Error marking player as finished: %v", err)
+		return
+	}
+
+	if wasMarkedFinished {
+		h.hub.BroadcastRoomStatus(client.RoomID, h.hub.RoomClientCount(client.RoomID), string(roomData.GameState))
+		h.hub.BroadcastMatchResult(client.RoomID, client.PlayerNumber)
+	}
+}
+
 // Continuously reads messages from the websocket connection until it encounters an error (like the client disconnecting)
 // When the connection ends:
 // - Client is unregistered from the hub
@@ -79,22 +110,31 @@ func (h *Handler) readPump(client *appWebsocket.Client) {
 		h.hub.Unregister(client)
 
 		liveCount := h.hub.RoomClientCount(client.RoomID)
-		if liveCount < 2 {
-			_ = h.roomManager.SetGameState(client.RoomID, room.GameStateWaiting)
-		}
-
 		roomData, exists := h.roomManager.GetRoom(client.RoomID)
 		if exists {
+			if liveCount < 2 && roomData.GameState != room.GameStateFinished {
+				_ = h.roomManager.SetGameState(client.RoomID, room.GameStateWaiting)
+			}
+
+			updatedRoomData, stillEXists := h.roomManager.GetRoom(client.RoomID)
+			if stillEXists {
+				roomData = updatedRoomData
+			}
+
 			h.hub.BroadcastRoomStatus(client.RoomID, liveCount, string(roomData.GameState))
+
 		}
+
 		client.Conn.Close()
 	}()
 
 	for {
-		_, _, err := client.Conn.ReadMessage()
+		_, message, err := client.Conn.ReadMessage()
 		if err != nil {
 			break
 		}
+
+		h.handleClientMessage(client, message)
 	}
 }
 

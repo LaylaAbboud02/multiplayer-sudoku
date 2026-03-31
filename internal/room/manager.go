@@ -47,9 +47,7 @@ func (m *Manager) GetRoom(id string) (*Room, bool) {
 }
 
 // Allows a player to join a room by its ID.
-// Checks if the room exists and if it has space for another player (max 2 players per room).
-// If the room is found and has space, it increments the player count and returns the room.
-// If the room is not found or is full, it returns an error.
+// Checks if the room exists
 func (m *Manager) JoinRoom(id string) (*Room, error) {
 	m.roomMu.Lock()
 	defer m.roomMu.Unlock()
@@ -74,6 +72,25 @@ func (m *Manager) SetGameState(roomID string, state GameState) error {
 
 	room.GameState = state
 	return nil
+}
+
+func (m *Manager) MarkFinished(roomId string, winnerPlayerNumber int) (*Room, bool, error) {
+	m.roomMu.Lock()
+	defer m.roomMu.Unlock()
+
+	room ,exists := m.rooms[roomId]
+	if !exists {
+		return nil, false, ErrRoomNotFound
+	}
+
+	if room.GameState == GameStateFinished {
+		return room, false, nil
+	}
+
+	room.GameState = GameStateFinished
+	room.WinnerPlayerNumber = winnerPlayerNumber
+
+	return room, true, nil
 }
 
 // Deletes a room from the manager by its ID.

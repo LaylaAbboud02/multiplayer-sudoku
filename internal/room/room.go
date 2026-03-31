@@ -18,19 +18,21 @@ const (
 )
 
 // Represents one multiplayer game room.
-// Contains the room ID, the game board, and the number of players currently in the room.
+// Contains the room ID, the game board, the current game state, and which player once state = finsished
 type Room struct {
-	ID          string
-	Board       game.Board
-	GameState   GameState
+	ID                 string
+	Board              game.Board
+	GameState          GameState
+	WinnerPlayerNumber int
 }
 
-// Creates a new Room with a unique ID, a sample game board, and initializes the player count to 1 (the creator of the room).
+// Creates a new Room with a unique ID, a sample game board, and initializes game state to waiting and winner to no one.
 func NewRoom() *Room {
 	return &Room{
-		ID:          generateRoomID(),
-		Board:       game.NewSampleBoard(),
-		GameState:   GameStateWaiting,
+		ID:                 generateRoomID(),
+		Board:              game.NewSampleBoard(),
+		GameState:          GameStateWaiting,
+		WinnerPlayerNumber: 0,
 	}
 }
 

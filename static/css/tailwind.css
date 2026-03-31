@@ -4,6 +4,7 @@
 @source "../js";
 
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant winx (&:where(.winx, .winx *));
 
 /* thicker 3x3 Sudoku borders */
 .cell:nth-child(9n + 3),
@@ -14,4 +15,14 @@
 .cell:nth-child(n + 19):nth-child(-n + 27),
 .cell:nth-child(n + 46):nth-child(-n + 54) {
   border-bottom-width: 3px;
+}
+
+/* Winx Club sparkle animation */
+@keyframes sparkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.winx .sparkle {
+  animation: sparkle 2s ease-in-out infinite;
 }

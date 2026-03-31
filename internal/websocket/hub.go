@@ -10,6 +10,8 @@ const (
 	// Message types sent to clients
 	MessageTypeRoomStatus       = "room_status"
 	MessageTypePlayerAssignment = "player_assignment"
+	MessageTypePlayerFinished = "player_finished"
+	MessageTypeMatchResult = "match_result"
 )
 
 // Json message sent to clients to update them on the current status of the room like how many players are in the room)
@@ -23,6 +25,18 @@ type RoomStatusMessage struct {
 type PlayerAssignmentMessage struct {
 	Type         string `json:"type"`
 	PlayerNumber int    `json:"player_number"`
+}
+
+// Sent by the server to both players once the winner is decided.
+type MatchResultMessage struct {
+	Type string `json:"type"`
+	WinnerPlayerNumber int `json:"winner_player_number"`
+}
+
+// Used when reading incoming client messages.
+// For now the only thing the client sends is "player_finished".
+type ClientMessage struct {
+	Type string `json:"type"`
 }
 
 // MAnages all active websocket clients and their connections to rooms.
@@ -129,6 +143,30 @@ func (h *Hub) BroadcastRoomStatus(roomID string, playerCount int, gameState stri
 		case client.Send <- payload:
 		default:
 			log.Printf("Failed to send room status message to client in room %s", roomID)
+		}
+	}
+}
+
+func (h *Hub) BroadcastMatchResult(roomID string, winnerPlayerNumber int) {
+	msg := MatchResultMessage{
+		Type: MessageTypeMatchResult,
+		WinnerPlayerNumber: winnerPlayerNumber,
+	}
+
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marshaling match result: %v", err)
+		return
+	}
+
+	h.clientsMu.RLock()
+	defer h.clientsMu.RUnlock()
+
+	for client := range h.clients[roomID] {
+		select {
+		case client.Send <- payload:
+		default: 
+			log.Printf("Failed to send match result to client in room %s", roomID)
 		}
 	}
 }

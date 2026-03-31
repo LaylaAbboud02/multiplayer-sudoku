@@ -7,6 +7,8 @@ const GAME_STATE_FINISHED = "finished";
 
 const MESSAGE_TYPE_ROOM_STATUS = "room_status";
 const MESSAGE_TYPE_PLAYER_ASSIGNMENT = "player_assignment";
+const MESSAGE_TYPE_PLAYER_FINISHED = "player_finished";
+const MESSAGE_TYPE_MATCH_RESULT = "match_result";
 
 const MAX_MISTAKES = 4;
 const ALLOWED_KEYS = [
@@ -23,6 +25,7 @@ const inputs = document.querySelectorAll(".cell-input");
 const mistakesDisplay = document.getElementById("mistakes-display");
 const attemptsLeftDisplay = document.getElementById("attempts-left-display");
 const statusMessage = document.getElementById("status-message");
+const liveRoomSubtext = document.getElementById("live-room-subtext");
 
 const livePlayerCount = document.getElementById("live-player-count");
 const liveRoomStatus = document.getElementById("live-room-status");
@@ -37,6 +40,13 @@ let gameState = pageRoot?.dataset.gameState || GAME_STATE_WAITING;
 let playerNumber = null;
 let mistakes = 0;
 let gameOver = false;
+
+// This becomes true once the player solves the board and sends the finish message.
+// We use it to temporarily lock the board while waiting for the server to announce the result.
+let finishedSubmitted = false;
+
+// We store the WebSocket here so other functions (like checkForWin) can send messages through it.
+let socket = null;
 
 // Runs the first setup for the page:
 // - updates the UI based on the initial values we got from HTML
@@ -164,6 +174,20 @@ function handleCellInput(event) {
   checkForWin();
 }
 
+function sendPlayerFinished() {
+  if (!socket || socket.readyState != WebSocket.OPEN) {
+    console.error("WebSocket is not connected. Cannot send player finished message.");
+    return;
+  }
+
+  const msg = {
+    type: MESSAGE_TYPE_PLAYER_FINISHED
+  };
+
+  socket.send(JSON.stringify(msg));
+  console.log("Sent player finished message to server.");
+}
+
 // Updates the live room data shown in the UI when a WebSocket room_status message arrives.
 // This includes:
 // - live player count
@@ -182,13 +206,56 @@ function updateLiveRoomStatus(playerCount, newGameState = gameState) {
   updateGameStateUI();
 
   if (liveRoomStatus) {
-    const isDark = document.documentElement.classList.contains('dark');
-    if (playerCount < 2) {
+    const isDark = document.documentElement.classList.contains("dark");
+    const isWinx = document.documentElement.classList.contains("winx");
+
+    // ADDED: finished state should not look like a normal waiting lobby
+    if (gameState === GAME_STATE_FINISHED) {
+      liveRoomStatus.textContent = "Match finished.";
+
+      if (isWinx) {
+        liveRoomStatus.className = "font-semibold text-pink-600";
+      } else if (isDark) {
+        liveRoomStatus.className = "font-semibold text-zinc-300";
+      } else {
+        liveRoomStatus.className = "font-semibold text-zinc-700";
+      }
+
+    } else if (playerCount < 2) {
       liveRoomStatus.textContent = "Waiting for another player to join...";
-      liveRoomStatus.className = isDark ? "mt-2 font-semibold text-amber-400" : "mt-2 font-semibold text-amber-700";
+
+      if (isWinx) {
+        liveRoomStatus.className = "font-semibold text-pink-600";
+      } else if (isDark) {
+        liveRoomStatus.className = "font-semibold text-amber-400";
+      } else {
+        liveRoomStatus.className = "font-semibold text-amber-700";
+      }
+
     } else {
-      liveRoomStatus.textContent = "Both players connected";
-      liveRoomStatus.className = isDark ? "mt-2 font-semibold text-emerald-400" : "mt-2 font-semibold text-emerald-700";
+      liveRoomStatus.textContent = "Both players connected.";
+
+      if (isWinx) {
+        liveRoomStatus.className = "font-semibold text-pink-600";
+      } else if (isDark) {
+        liveRoomStatus.className = "font-semibold text-emerald-400";
+      } else {
+        liveRoomStatus.className = "font-semibold text-emerald-700";
+      }
+    }
+  }
+
+    // ADDED: update the smaller room status text under the main status line
+  if (liveRoomSubtext) {
+    if (gameState === GAME_STATE_FINISHED) {
+      liveRoomSubtext.textContent = "This match is over. Start a new room to play again.";
+      console.log("Game finished, updated live room subtext accordingly.");
+    } else if (playerCount < 2) {
+      liveRoomSubtext.textContent = "Your room is live. Share the code and wait for someone to join.";
+      console.log("playercount < 2, updated live room subtext accordingly.");
+    } else {
+      liveRoomSubtext.textContent = "Nice. The room is full and ready for the match.";
+      console.log("playercount >= 2, updated live room subtext accordingly.");
     }
   }
 }
@@ -214,6 +281,11 @@ function updateRoomReadyUI() {
 
   // If the game is already over, leave the final status message alone.
   if (gameOver) return;
+
+  if(finishedSubmitted) {
+    statusMessage.textContent = "Board solved! Waiting for result...";
+    return;
+  }
 
   if (!roomReady) {
     statusMessage.textContent = "Waiting for another player to join...";
@@ -270,6 +342,10 @@ function endGameLoss() {
 
 function checkForWin() {
   for (const input of inputs) {
+    if(finishedSubmitted) {
+      return;
+    }
+
     const correctValue = Number(input.dataset.solution);
 
     if (Number(input.value) !== correctValue) {
@@ -277,10 +353,29 @@ function checkForWin() {
     }
   }
 
-  gameOver = true;
-  statusMessage.textContent = "Puzzle solved!";
+  // At this point, the player solved the whole board.
+  // We do NOT decide the winner locally anymore.
+  // Instead, we tell the server and wait for the official result.
+  finishedSubmitted = true;
   updateRoomReadyUI();
-  alert("Congratulations! You solved the puzzle.");
+  sendPlayerFinished();
+}
+
+function handleMatchResult(winnerPlayerNumber) {
+  gameOver = true;
+  finishedSubmitted = false;
+  gameState = GAME_STATE_FINISHED;
+
+  updateGameStateUI();
+  updateRoomReadyUI();
+
+  if (winnerPlayerNumber === playerNumber) {
+    statusMessage.textContent = "You won!";
+    alert("You won! You finished the board first.");
+  } else {
+    statusMessage.textContent = "You lost.";
+    alert("You lost. Your opponent finished first.");
+  }
 }
 
 function connectWebSocket() {
@@ -296,7 +391,7 @@ function connectWebSocket() {
   console.log("roomId =", roomId);
   console.log("wsURL =", wsURL);
 
-  const socket = new WebSocket(wsURL);
+  socket = new WebSocket(wsURL);
 
   socket.addEventListener("open", () => {
     console.log("WebSocket connected.");
@@ -318,6 +413,11 @@ function connectWebSocket() {
         playerNumber = msg.player_number;
         updatePlayerRoleUI();
       }
+
+      if(msg.type === MESSAGE_TYPE_MATCH_RESULT) {
+        console.log("Received match result. Winner player number:", msg.winner_player_number);
+        handleMatchResult(msg.winner_player_number);
+      }
     } catch (error) {
       console.error("Failed to parse WebSocket message:", error);
     }
@@ -327,7 +427,11 @@ function connectWebSocket() {
     console.log("WebSocket closed.", event);
 
     roomReady = false;
-    gameState = GAME_STATE_WAITING;
+    finishedSubmitted = false;
+    
+    if (!gameOver) {
+      gameState = GAME_STATE_WAITING;
+    }
 
     updateRoomReadyUI();
     updateGameStateUI();
