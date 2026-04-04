@@ -65,7 +65,7 @@ func (m *Manager) SetGameState(roomID string, state GameState) error {
 	m.roomMu.Lock()
 	defer m.roomMu.Unlock()
 
-	room ,exists := m.rooms[roomID]
+	room, exists := m.rooms[roomID]
 	if !exists {
 		return ErrRoomNotFound
 	}
@@ -78,7 +78,7 @@ func (m *Manager) MarkFinished(roomId string, winnerPlayerNumber int) (*Room, bo
 	m.roomMu.Lock()
 	defer m.roomMu.Unlock()
 
-	room ,exists := m.rooms[roomId]
+	room, exists := m.rooms[roomId]
 	if !exists {
 		return nil, false, ErrRoomNotFound
 	}
@@ -91,6 +91,25 @@ func (m *Manager) MarkFinished(roomId string, winnerPlayerNumber int) (*Room, bo
 	room.WinnerPlayerNumber = winnerPlayerNumber
 
 	return room, true, nil
+}
+
+func (m *Manager) UpdatePlayerProgress(roomID string, playerNumber int, progressCount int) (*Room, error) {
+	m.roomMu.Lock()
+	defer m.roomMu.Unlock()
+
+	room, exists := m.rooms[roomID]
+	if !exists {
+		return nil, ErrRoomNotFound
+	}
+
+	switch playerNumber {
+	case 1:
+		room.Player1Progress = progressCount
+	case 2:
+		room.Player2Progress = progressCount
+	}
+
+	return room, nil
 }
 
 // Deletes a room from the manager by its ID.

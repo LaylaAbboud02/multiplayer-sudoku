@@ -9,6 +9,7 @@ const MESSAGE_TYPE_ROOM_STATUS = "room_status";
 const MESSAGE_TYPE_PLAYER_ASSIGNMENT = "player_assignment";
 const MESSAGE_TYPE_PLAYER_FINISHED = "player_finished";
 const MESSAGE_TYPE_MATCH_RESULT = "match_result";
+const MESSAGE_TYPE_PROGRESS_UPDATE = "progress_update";
 
 const MAX_MISTAKES = 4;
 const ALLOWED_KEYS = [
@@ -31,6 +32,8 @@ const livePlayerCount = document.getElementById("live-player-count");
 const liveRoomStatus = document.getElementById("live-room-status");
 const playerRole = document.getElementById("player-role");
 const gameStateDisplay = document.getElementById("game-state-display");
+const yourProgressDisplay = document.getElementById("your-progress-display");
+const opponentProgressDisplay = document.getElementById("opponent-progress-display");
 
 const boardWrapper = document.querySelector(".overflow-x-auto");
 const pageRoot = document.querySelector("main");
@@ -48,6 +51,10 @@ let finishedSubmitted = false;
 // We store the WebSocket here so other functions (like checkForWin) can send messages through it.
 let socket = null;
 
+// local race progress state
+let myProgressCount = 0;
+let opponentProgressCount = 0;
+
 // Runs the first setup for the page:
 // - updates the UI based on the initial values we got from HTML
 // - attaches listeners to all Sudoku input cells
@@ -56,6 +63,7 @@ init();
 
 function init() {
   updateMistakeUI();
+  updateProgressUI();
   updateRoomReadyUI();
   updateGameStateUI();
   attachInputListeners();
@@ -132,6 +140,12 @@ function handleCellInput(event) {
     return;
   }
 
+  // If this cell was already solved before, do nothing.
+  // This prevents counting the same cell twice.
+  if (event.target.dataset.solved === "true") {
+    return;
+  }
+
   // Remove any characters that are not digits 1-9.
   // Then keep only the first valid character, because a Sudoku cell should contain one number max.
   let value = event.target.value.replace(/[^1-9]/g, "");
@@ -169,6 +183,15 @@ function handleCellInput(event) {
     return;
   }
 
+  // mark this cell as permanently solved so it cannot be counted again.
+  event.target.dataset.solved = "true";
+  event.target.disabled = true;
+
+  // increase local progress and immediately update/broadcast it.
+  myProgressCount += 1;
+  updateProgressUI();
+  sendProgressUpdate();
+
   // If the number was correct, keep it in the cell
   // and check whether the whole puzzle is now solved.
   checkForWin();
@@ -186,6 +209,48 @@ function sendPlayerFinished() {
 
   socket.send(JSON.stringify(msg));
   console.log("Sent player finished message to server.");
+}
+
+function sendProgressUpdate() {
+  if (!socket || socket.readyState != WebSocket.OPEN) {
+    console.error("WebSocket is not connected. Cannot send progress update.");
+    return;
+  }
+
+  const msg = {
+    type: MESSAGE_TYPE_PROGRESS_UPDATE,
+    progress_count: myProgressCount
+  }
+
+  socket.send(JSON.stringify(msg));
+  console.log("Sent progress update to server. Progress count:", myProgressCount);
+}
+
+function updateProgressUI() {
+  const totalFillableCells = inputs.length;
+
+  if (yourProgressDisplay) {
+    yourProgressDisplay.textContent = `Your progress: ${myProgressCount} / ${totalFillableCells}`;
+  }
+
+  if (opponentProgressDisplay) {
+    opponentProgressDisplay.textContent = `Opponent's progress: ${opponentProgressCount} / ${totalFillableCells}`;
+  }
+}
+
+function handleProgressUpdate(player1Progress, player2Progress) {
+  if (playerNumber === 1) { 
+    myProgressCount = player1Progress;
+    opponentProgressCount = player2Progress;
+  } else if (playerNumber === 2) {
+    myProgressCount = player2Progress;
+    opponentProgressCount = player1Progress;
+  } else {
+    myProgressCount = 0;
+    opponentProgressCount = 0;
+  }
+
+  updateProgressUI();
 }
 
 // Updates the live room data shown in the UI when a WebSocket room_status message arrives.
@@ -341,16 +406,13 @@ function endGameLoss() {
 }
 
 function checkForWin() {
-  for (const input of inputs) {
-    if(finishedSubmitted) {
-      return;
-    }
-
-    const correctValue = Number(input.dataset.solution);
-
-    if (Number(input.value) !== correctValue) {
-      return;
-    }
+   if(finishedSubmitted) {
+    return;
+  
+  }
+  
+  if (myProgressCount !== inputs.length) {
+    return;
   }
 
   // At this point, the player solved the whole board.
@@ -395,6 +457,7 @@ function connectWebSocket() {
 
   socket.addEventListener("open", () => {
     console.log("WebSocket connected.");
+    sendProgressUpdate();
   });
 
   socket.addEventListener("message", (event) => {
@@ -412,6 +475,11 @@ function connectWebSocket() {
         console.log("Received player assignment:", msg.player_number);
         playerNumber = msg.player_number;
         updatePlayerRoleUI();
+      }
+
+      if (msg.type === MESSAGE_TYPE_PROGRESS_UPDATE) {
+        console.log("Received progress update. Player 1 progress:", msg.player1_progress, "Player 2 progress:", msg.player2_progress);
+        handleProgressUpdate(msg.player1_progress, msg.player2_progress);
       }
 
       if(msg.type === MESSAGE_TYPE_MATCH_RESULT) {

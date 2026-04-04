@@ -10,8 +10,9 @@ const (
 	// Message types sent to clients
 	MessageTypeRoomStatus       = "room_status"
 	MessageTypePlayerAssignment = "player_assignment"
-	MessageTypePlayerFinished = "player_finished"
-	MessageTypeMatchResult = "match_result"
+	MessageTypePlayerFinished   = "player_finished"
+	MessageTypeMatchResult      = "match_result"
+	MessageTypeProgressUpdate   = "progress_update"
 )
 
 // Json message sent to clients to update them on the current status of the room like how many players are in the room)
@@ -29,14 +30,20 @@ type PlayerAssignmentMessage struct {
 
 // Sent by the server to both players once the winner is decided.
 type MatchResultMessage struct {
-	Type string `json:"type"`
-	WinnerPlayerNumber int `json:"winner_player_number"`
+	Type               string `json:"type"`
+	WinnerPlayerNumber int    `json:"winner_player_number"`
+}
+
+type ProgressUpdateMessage struct {
+	Type            string `json:"type"`
+	Player1Progress int    `json:"player1_progress"`
+	Player2Progress int    `json:"player2_progress"`
 }
 
 // Used when reading incoming client messages.
-// For now the only thing the client sends is "player_finished".
 type ClientMessage struct {
-	Type string `json:"type"`
+	Type          string `json:"type"`
+	ProgressCount int    `json:"progress_count,omitempty"`
 }
 
 // MAnages all active websocket clients and their connections to rooms.
@@ -123,10 +130,10 @@ func (h *Hub) SendPlayerAssignment(client *Client) {
 // sends a room status update message to all clients in the specified room to let them know of the current player count.
 func (h *Hub) BroadcastRoomStatus(roomID string, playerCount int, gameState string) {
 	msg := RoomStatusMessage{
-		Type: MessageTypeRoomStatus,
-		RoomID: roomID,
+		Type:        MessageTypeRoomStatus,
+		RoomID:      roomID,
 		PlayerCount: playerCount,
-		GameState: gameState,
+		GameState:   gameState,
 	}
 
 	payload, err := json.Marshal(msg)
@@ -149,7 +156,7 @@ func (h *Hub) BroadcastRoomStatus(roomID string, playerCount int, gameState stri
 
 func (h *Hub) BroadcastMatchResult(roomID string, winnerPlayerNumber int) {
 	msg := MatchResultMessage{
-		Type: MessageTypeMatchResult,
+		Type:               MessageTypeMatchResult,
 		WinnerPlayerNumber: winnerPlayerNumber,
 	}
 
@@ -165,8 +172,34 @@ func (h *Hub) BroadcastMatchResult(roomID string, winnerPlayerNumber int) {
 	for client := range h.clients[roomID] {
 		select {
 		case client.Send <- payload:
-		default: 
+		default:
 			log.Printf("Failed to send match result to client in room %s", roomID)
 		}
 	}
+}
+
+func (h *Hub) BroadcastProgressUpdate(roomID string, player1Progress int, player2Progress int) {
+	msg := ProgressUpdateMessage{
+		Type:            MessageTypeProgressUpdate,
+		Player1Progress: player1Progress,
+		Player2Progress: player2Progress,
+	}
+
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marshaling progress update: %v", err)
+		return
+	}
+
+	h.clientsMu.RLock()
+	defer h.clientsMu.RUnlock()
+
+	for client := range h.clients[roomID] {
+		select {
+		case client.Send <- payload:
+		default:
+			log.Printf("Failed to send progress update to client in room %s", roomID)
+		}
+	}
+
 }

@@ -64,6 +64,7 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 
 	h.hub.SendPlayerAssignment(client)
 	h.hub.BroadcastRoomStatus(roomID, h.hub.RoomClientCount(roomID), string(roomData.GameState))
+	h.hub.BroadcastProgressUpdate(roomID, roomData.Player1Progress, roomData.Player2Progress)
 
 	// Starts goroutines for reading and writing messages for this client
 	go h.writePump(client)
@@ -74,17 +75,29 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleClientMessage(client *appWebsocket.Client, raw []byte) {
 	var msg appWebsocket.ClientMessage
 
-	if err:= json.Unmarshal(raw, &msg); err != nil {
+	if err := json.Unmarshal(raw, &msg); err != nil {
 		log.Printf("Failed to unmarshal client message: %v", err)
 		return
 	}
 
 	switch msg.Type {
-		case appWebsocket.MessageTypePlayerFinished:
-			h.handlePlayerFinished(client)
-		default:
-			log.Printf("Unknown message type received from client: %s", msg.Type)
+	case appWebsocket.MessageTypePlayerFinished:
+		h.handlePlayerFinished(client)
+	case appWebsocket.MessageTypeProgressUpdate:
+		h.handleProgressUpdate(client, msg.ProgressCount)
+	default:
+		log.Printf("Unknown message type received from client: %s", msg.Type)
 	}
+}
+
+func (h *Handler) handleProgressUpdate(client *appWebsocket.Client, progressCount int) {
+	roomData, err := h.roomManager.UpdatePlayerProgress(client.RoomID, client.PlayerNumber, progressCount)
+	if err != nil {
+		log.Printf("Error updating player progress: %v", err)
+		return
+	}
+
+	h.hub.BroadcastProgressUpdate(client.RoomID, roomData.Player1Progress, roomData.Player2Progress)
 }
 
 func (h *Handler) handlePlayerFinished(client *appWebsocket.Client) {
@@ -122,6 +135,8 @@ func (h *Handler) readPump(client *appWebsocket.Client) {
 			}
 
 			h.hub.BroadcastRoomStatus(client.RoomID, liveCount, string(roomData.GameState))
+
+			h.hub.BroadcastProgressUpdate(client.RoomID, roomData.Player1Progress, roomData.Player2Progress)
 
 		}
 

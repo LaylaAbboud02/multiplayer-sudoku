@@ -19,20 +19,26 @@ const (
 
 // Represents one multiplayer game room.
 // Contains the room ID, the game board, the current game state, and which player once state = finsished
+// Also progress of each player
 type Room struct {
 	ID                 string
 	Board              game.Board
 	GameState          GameState
 	WinnerPlayerNumber int
+	Player1Progress    int
+	Player2Progress    int
 }
 
 // Creates a new Room with a unique ID, a sample game board, and initializes game state to waiting and winner to no one.
+// And player progress starts with 0 for both players.
 func NewRoom() *Room {
 	return &Room{
 		ID:                 generateRoomID(),
 		Board:              game.NewSampleBoard(),
 		GameState:          GameStateWaiting,
 		WinnerPlayerNumber: 0,
+		Player1Progress:    0,
+		Player2Progress:    0,
 	}
 }
 
